@@ -11,6 +11,7 @@
   --grey: #6b7280;
   --text: #e2e2e8;
   --text-dim: #9090a0;
+  --text-xs: #6a6a7a;
   --font: 'Courier New', Courier, monospace;
 }
 
@@ -92,21 +93,26 @@ body {
 }
 
 /* ── SERVICE CARDS ── */
-.services-list { padding: 0.5rem; }
+.services-list { padding: 0.4rem; }
+
 .service-card {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.5rem 0.4rem;
   border-bottom: 1px solid var(--border);
 }
-.service-card:last-child { border-bottom: none; }
+.service-card:last-of-type { border-bottom: none; }
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
 .status-dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 3px;
 }
 .status-dot.running  { background: var(--green); box-shadow: 0 0 5px var(--green); }
 .status-dot.stopped  { background: var(--grey); }
@@ -115,32 +121,51 @@ body {
 .status-dot.unknown  { background: var(--grey); opacity: 0.4; }
 .status-dot.missing  { background: var(--grey); opacity: 0.3; }
 
-.service-name {
+.service-info {
   flex: 1;
-  font-size: 0.78rem;
+  min-width: 0;
+}
+.service-name {
+  display: block;
+  font-size: 0.8rem;
   color: var(--text);
+  font-weight: bold;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.service-desc {
+  font-size: 0.65rem;
+  color: var(--text-xs);
+  margin-top: 2px;
+  line-height: 1.35;
+  /* allow wrapping for descriptions */
+}
+
+.card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  flex-shrink: 0;
 }
 .service-link {
   color: var(--accent);
   text-decoration: none;
   font-size: 0.7rem;
-  flex-shrink: 0;
 }
 .service-link:hover { color: var(--accent2); }
 .service-btns {
   display: flex;
-  gap: 0.3rem;
-  flex-shrink: 0;
+  gap: 0.25rem;
 }
+
 .service-error {
   font-size: 0.68rem;
   color: var(--red);
-  padding: 0 0.5rem 0.3rem;
-  grid-column: 1/-1;
+  padding: 0.2rem 0 0.1rem 1.1rem;
 }
+.hidden { display: none !important; }
 
 /* ── BUTTONS ── */
 button {
@@ -148,16 +173,16 @@ button {
   border: none;
   border-radius: 3px;
   font-family: var(--font);
-  font-size: 0.7rem;
-  padding: 0.2rem 0.5rem;
+  font-size: 0.68rem;
+  padding: 0.18rem 0.45rem;
   transition: opacity 0.15s;
 }
-button:disabled { opacity: 0.4; cursor: not-allowed; }
-button:not(:disabled):hover { opacity: 0.85; }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+button:not(:disabled):hover { opacity: 0.8; }
 
-.btn-start   { background: #1a3d2b; color: var(--green); border: 1px solid var(--green); }
-.btn-stop    { background: #3d1a1a; color: var(--red);   border: 1px solid var(--red); }
-.btn-restart { background: #3d3517; color: var(--yellow);border: 1px solid var(--yellow); }
+.btn-start   { background: #1a3d2b; color: var(--green);   border: 1px solid var(--green); }
+.btn-stop    { background: #3d1a1a; color: var(--red);     border: 1px solid var(--red); }
+.btn-restart { background: #3d3517; color: var(--yellow);  border: 1px solid var(--yellow); }
 .btn-reboot  { background: #2a1a3d; color: var(--accent2); border: 1px solid var(--accent); }
 .btn-sysinfo { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-size: 0.65rem; }
 .btn-icon    { background: transparent; color: var(--text-dim); border: none; font-size: 1rem; padding: 0.2rem 0.4rem; }

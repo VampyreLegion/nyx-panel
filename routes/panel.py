@@ -32,6 +32,7 @@ async def _get_machine_status(machine_key: str, machine: dict) -> dict:
             "type": svc["type"],
             "state": state,
             "url": svc.get("url"),
+            "desc": svc.get("desc"),
         }
 
     services = await asyncio.gather(*[fetch_service(s) for s in machine["services"]])

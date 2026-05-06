@@ -21,23 +21,29 @@ function renderMachineKey(key) {
 
 function renderServiceCard(machineKey, svc) {
   const cls = stateClass(svc.state);
+  const slug = svc.name.replace(/[^a-z0-9]/gi, '-');
   const link = svc.url
-    ? `<a class="service-link" href="${svc.url}" target="_blank" rel="noopener">↗</a>`
+    ? `<a class="service-link" href="${svc.url}" target="_blank" rel="noopener" title="${svc.url}">↗</a>`
     : '';
-  const canRestart = svc.type === 'docker' || svc.type === 'systemd';
   const startBtn = `<button class="btn-start" data-machine="${machineKey}" data-service="${svc.name}" data-type="${svc.type}" data-action="start" ${svc.state === 'running' ? 'disabled' : ''}>Start</button>`;
   const stopBtn  = `<button class="btn-stop"  data-machine="${machineKey}" data-service="${svc.name}" data-type="${svc.type}" data-action="stop"  ${svc.state === 'stopped' ? 'disabled' : ''}>Stop</button>`;
-  const restartBtn = canRestart
-    ? `<button class="btn-restart" data-machine="${machineKey}" data-service="${svc.name}" data-type="${svc.type}" data-action="restart">↺</button>`
-    : '';
+  const restartBtn = `<button class="btn-restart" data-machine="${machineKey}" data-service="${svc.name}" data-type="${svc.type}" data-action="restart">↺</button>`;
+  const desc = svc.desc ? `<div class="service-desc">${svc.desc}</div>` : '';
   return `
-    <div class="service-card" id="card-${machineKey}-${svc.name.replace(/[^a-z0-9]/gi,'-')}">
-      <div class="status-dot ${cls}"></div>
-      <span class="service-name" title="${svc.name}">${svc.label || svc.name}</span>
-      ${link}
-      <div class="service-btns">${startBtn}${stopBtn}${restartBtn}</div>
+    <div class="service-card" id="card-${machineKey}-${slug}">
+      <div class="card-top">
+        <div class="status-dot ${cls}"></div>
+        <div class="service-info">
+          <span class="service-name">${svc.label || svc.name}</span>
+          ${desc}
+        </div>
+        <div class="card-right">
+          ${link}
+          <div class="service-btns">${startBtn}${stopBtn}${restartBtn}</div>
+        </div>
+      </div>
     </div>
-    <div class="service-error hidden" id="err-${machineKey}-${svc.name.replace(/[^a-z0-9]/gi,'-')}"></div>`;
+    <div class="service-error hidden" id="err-${machineKey}-${slug}"></div>`;
 }
 
 function renderMachine(key, data) {
@@ -74,7 +80,7 @@ function renderAll(status) {
   attachHandlers();
 }
 
-// ── DIFF UPDATE (avoid full re-render if unchanged) ──────────────────────
+// ── DIFF UPDATE ──────────────────────────────────────────────────────────
 function updateDOM(newStatus) {
   if (JSON.stringify(newStatus) === JSON.stringify(lastStatus)) return;
   lastStatus = newStatus;
@@ -125,7 +131,7 @@ function showError(machine, service, msg) {
 
 function attachHandlers() {
   document.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', async () => {
       const { machine, service, type, action } = btn.dataset;
       btn.disabled = true;
       try {
