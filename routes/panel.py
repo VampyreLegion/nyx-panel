@@ -6,6 +6,7 @@ from config import MACHINES
 from core.executor import (
     check_reachable, get_systemd_state, get_docker_state,
     run_systemd_action, run_docker_action, run_reboot,
+    get_gpu_stats, get_service_logs,
 )
 
 router = APIRouter()
@@ -14,7 +15,7 @@ router = APIRouter()
 async def _get_machine_status(machine_key: str, machine: dict) -> dict:
     reachable, uptime = await asyncio.to_thread(check_reachable, machine_key)
     if not reachable:
-        return {"reachable": False, "uptime": None, "services": []}
+        return {"reachable": False, "uptime": None, "services": [], "gpu": None}
 
     async def fetch_service(svc: dict):
         try:
@@ -35,8 +36,19 @@ async def _get_machine_status(machine_key: str, machine: dict) -> dict:
             "desc": svc.get("desc"),
         }
 
-    services = await asyncio.gather(*[fetch_service(s) for s in machine["services"]])
-    return {"reachable": True, "uptime": uptime, "services": list(services)}
+    async def fetch_gpu():
+        if not machine.get("has_gpu"):
+            return None
+        try:
+            return await asyncio.to_thread(get_gpu_stats, machine_key)
+        except Exception:
+            return None
+
+    services_results, gpu = await asyncio.gather(
+        asyncio.gather(*[fetch_service(s) for s in machine["services"]]),
+        fetch_gpu(),
+    )
+    return {"reachable": True, "uptime": uptime, "services": list(services_results), "gpu": gpu}
 
 
 @router.get("/api/status")
@@ -46,7 +58,7 @@ async def status():
     out = {}
     for key, result in zip(tasks.keys(), results):
         if isinstance(result, Exception):
-            out[key] = {"reachable": False, "uptime": None, "services": []}
+            out[key] = {"reachable": False, "uptime": None, "services": [], "gpu": None}
         else:
             out[key] = result
     return out
@@ -87,9 +99,8 @@ async def reboot(req: RebootRequest):
 
 
 @router.get("/api/logs/{machine_key}/{service_name}")
-async def logs(machine_key: str, service_name: str, type: str = "systemd", lines: int = 80):
+async def logs(machine_key: str, service_name: str, type: str = "systemd", lines: int = 100):
     if machine_key not in MACHINES:
         return {"ok": False, "error": "unknown machine"}
-    from core.executor import get_service_logs
     output = await asyncio.to_thread(get_service_logs, machine_key, service_name, type, lines)
     return {"ok": True, "machine": machine_key, "service": service_name, "logs": output}

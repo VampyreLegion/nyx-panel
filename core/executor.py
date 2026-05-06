@@ -162,3 +162,46 @@ def get_service_logs(machine_key: str, service_name: str, service_type: str, lin
             return out or "(no output)"
     except Exception as e:
         return f"error: {e}"
+
+
+def get_gpu_stats(machine_key: str) -> list[dict] | None:
+    """Returns list of GPU dicts, or None if nvidia-smi unavailable."""
+    m = MACHINES[machine_key]
+    smi = "nvidia-smi --query-gpu=index,name,utilization.gpu,temperature.gpu,power.draw --format=csv,noheader,nounits 2>/dev/null"
+    mem = "free -m | grep Mem"
+    try:
+        if m["is_local"]:
+            _, smi_out, _ = _run_local(["bash", "-c", smi])
+            _, mem_out, _ = _run_local(["bash", "-c", mem])
+        else:
+            _, smi_out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], smi, timeout=6)
+            _, mem_out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], mem, timeout=6)
+    except Exception:
+        return None
+
+    if not smi_out.strip():
+        return None
+
+    gpus = []
+    for line in smi_out.strip().splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 5:
+            continue
+        idx, name, util, temp, power = parts[0], parts[1], parts[2], parts[3], parts[4]
+        gpu = {
+            "index": idx,
+            "name": name,
+            "util_pct": None if util == "[N/A]" else int(float(util)),
+            "temp_c": None if temp == "[N/A]" else int(float(temp)),
+            "power_w": None if power == "[N/A]" else round(float(power), 1),
+        }
+        # parse system memory for unified-memory GPUs
+        if mem_out.strip():
+            parts = mem_out.split()
+            try:
+                gpu["mem_used_mb"]  = int(parts[2])
+                gpu["mem_total_mb"] = int(parts[1])
+            except Exception:
+                pass
+        gpus.append(gpu)
+    return gpus or None

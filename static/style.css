@@ -254,3 +254,64 @@ pre#modal-pre {
   line-height: 1.5;
 }
 .logs-content { background: #0a0a0c; } .logs-content pre { color: #b0c8b0; font-size: 0.7rem; line-height: 1.45; }
+
+/* ── GPU WIDGET ── */
+.gpu-widget {
+  padding: 0.5rem 0.75rem;
+  background: #0f0f14;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.7rem;
+}
+.gpu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+.gpu-name {
+  color: var(--accent2);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+.gpu-badges { display: flex; gap: 0.35rem; }
+.gpu-badge {
+  background: #1a1a22;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.05rem 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.65rem;
+}
+.gpu-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+.gpu-bar-label {
+  width: 2.4rem;
+  color: var(--text-xs);
+  font-size: 0.62rem;
+  flex-shrink: 0;
+}
+.gpu-bar-track {
+  flex: 1;
+  height: 5px;
+  background: #1e1e26;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.gpu-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.gpu-bar-fill.mem { background: #3b9e6b; }
+.gpu-bar-val {
+  width: 6rem;
+  text-align: right;
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
