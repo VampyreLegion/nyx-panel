@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYX CONTROL PANEL</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top-bar">
+    <div class="top-bar-title">NYX CONTROL PANEL</div>
+    <div class="top-bar-meta">
+      <span id="last-refresh">Loading...</span>
+      <button class="btn-icon" id="refresh-btn" title="Refresh now">⟳</button>
+    </div>
+  </header>
+
+  <main id="machines-grid" class="machines-grid"></main>
+
+  <!-- Deep Dive Modal -->
+  <div id="sysinfo-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="modal-title">System Info</span>
+        <button class="btn-icon modal-close" id="modal-close">✕</button>
+      </div>
+      <div id="modal-tabs" class="modal-tabs">
+        <button class="tab-btn active" data-tab="memory">Memory</button>
+        <button class="tab-btn" data-tab="cpu">CPU</button>
+        <button class="tab-btn" data-tab="disk">Disk</button>
+        <button class="tab-btn" data-tab="processes">Processes</button>
+        <button class="tab-btn" data-tab="ports">Ports</button>
+        <button class="tab-btn" data-tab="timers">Timers</button>
+        <button class="tab-btn" data-tab="cron">Cron</button>
+        <button class="tab-btn" data-tab="uptime">Uptime</button>
+      </div>
+      <div id="modal-content" class="modal-content">
+        <pre id="modal-pre">Loading...</pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden"></div>
+
+  <script src="/static/panel.js"></script>
+</body>
+</html>
