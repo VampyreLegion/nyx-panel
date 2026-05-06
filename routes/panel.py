@@ -84,3 +84,12 @@ async def reboot(req: RebootRequest):
         return {"ok": False, "error": "unknown machine"}
     ok, msg = await asyncio.to_thread(run_reboot, req.machine)
     return {"ok": ok, "message": msg}
+
+
+@router.get("/api/logs/{machine_key}/{service_name}")
+async def logs(machine_key: str, service_name: str, type: str = "systemd", lines: int = 80):
+    if machine_key not in MACHINES:
+        return {"ok": False, "error": "unknown machine"}
+    from core.executor import get_service_logs
+    output = await asyncio.to_thread(get_service_logs, machine_key, service_name, type, lines)
+    return {"ok": True, "machine": machine_key, "service": service_name, "logs": output}

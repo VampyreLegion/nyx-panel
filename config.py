@@ -43,6 +43,7 @@ MACHINES = {
             {"name": "hermes",         "type": "systemd", "label": "Hermes Agent",   "desc": "Telegram AI agent (v0.8.0) — persona: Nyx Studios security monitor, model: gemma4:e2b", "url": None},
             {"name": "nyx-bot",        "type": "systemd", "label": "Nyx Bot",        "desc": "Telegram command bot — /report /status /help → @Nyx_SecurityBot",              "url": None},
             {"name": "cloudflared",    "type": "systemd", "label": "Cloudflared",    "desc": "Cloudflare Tunnel — routes all *.nyxstudios.net traffic in from the internet", "url": None},
+            {"name": "openclaw", "type": "systemd", "label": "OpenClaw", "desc": "MCP AI gateway — model: ollama/gemma4:e2b, plugins: DuckDuckGo on :18789", "url": "https://openclaw.nyxstudios.net"},
             {"name": "nyx-panel",      "type": "systemd", "label": "Nyx Panel",      "desc": "This control panel — FastAPI on :8085, proxied via Cloudflare Tunnel",         "url": "https://services.nyxstudios.net"},
         ],
     },

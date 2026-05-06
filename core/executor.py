@@ -145,3 +145,20 @@ def get_sysinfo(machine_key: str) -> dict:
         except Exception as e:
             results[key] = f"error: {e}"
     return results
+
+
+def get_service_logs(machine_key: str, service_name: str, service_type: str, lines: int = 80) -> str:
+    m = MACHINES[machine_key]
+    if service_type == "docker":
+        cmd = f"docker logs --tail {lines} {service_name} 2>&1"
+    else:
+        cmd = f"journalctl -u {service_name} -n {lines} --no-pager --output=short-iso 2>&1"
+    try:
+        if m["is_local"]:
+            _, out, err = _run_local(["bash", "-c", cmd])
+            return out or err or "(no output)"
+        else:
+            _, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], cmd, timeout=10)
+            return out or "(no output)"
+    except Exception as e:
+        return f"error: {e}"

@@ -185,6 +185,7 @@ button:not(:disabled):hover { opacity: 0.8; }
 .btn-restart { background: #3d3517; color: var(--yellow);  border: 1px solid var(--yellow); }
 .btn-reboot  { background: #2a1a3d; color: var(--accent2); border: 1px solid var(--accent); }
 .btn-sysinfo { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-size: 0.65rem; }
+.btn-logs    { background: #0d1e2d; color: #60b3d7; border: 1px solid #2a5a7a; font-size: 0.68rem; }
 .btn-icon    { background: transparent; color: var(--text-dim); border: none; font-size: 1rem; padding: 0.2rem 0.4rem; }
 .btn-icon:hover { color: var(--text); }
 
@@ -252,3 +253,4 @@ pre#modal-pre {
   word-break: break-all;
   line-height: 1.5;
 }
+.logs-content { background: #0a0a0c; } .logs-content pre { color: #b0c8b0; font-size: 0.7rem; line-height: 1.45; }
