@@ -86,15 +86,24 @@ def _parse_gpu_output(smi_out: str, mem_out: str) -> list[dict] | None:
 
 def check_reachable(machine_key: str) -> tuple[bool, str | None]:
     m = MACHINES[machine_key]
-    try:
-        if m["is_local"]:
+    if m["is_local"]:
+        try:
             _, out, _ = _run_local(["uptime", "-p"])
             return True, out.strip() or None
-        else:
-            _, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], "uptime -p", timeout=6)
-            return True, out.strip() or None
+        except Exception:
+            return False, None
+    # Remote: ping first so a machine that is up but has no SSH still shows as reachable
+    try:
+        rc, _, _ = _run_local(["ping", "-c", "1", "-W", "2", m["ip"]])
+        if rc != 0:
+            return False, None
     except Exception:
         return False, None
+    try:
+        _, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], "uptime -p", timeout=6)
+        return True, out.strip() or None
+    except Exception:
+        return True, None  # up but SSH unavailable — callers handle gracefully
 
 
 def get_systemd_state(machine_key: str, service_name: str) -> str:
@@ -120,9 +129,12 @@ def get_docker_state(machine_key: str, container_name: str) -> str:
 def get_machine_data_batch(machine_key: str) -> tuple[dict[str, str], list[dict] | None]:
     """Fetch all service states + GPU stats for a remote machine in one SSH session."""
     m = MACHINES[machine_key]
-    client = _ssh_connect(m["ip"], m["ssh_user"], m["ssh_password"])
     states: dict[str, str] = {}
     gpu: list[dict] | None = None
+    try:
+        client = _ssh_connect(m["ip"], m["ssh_user"], m["ssh_password"])
+    except Exception:
+        return {svc["name"]: "unknown" for svc in m["services"]}, None
     try:
         for svc in m["services"]:
             try:

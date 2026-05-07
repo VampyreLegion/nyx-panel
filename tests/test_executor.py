@@ -126,22 +126,33 @@ class TestCheckReachable:
 
     def test_remote_reachable(self):
         from core.executor import check_reachable
-        with patch("core.executor._ssh_exec", return_value=(0, "up 4 hours, 39 minutes\n", "")):
-            reachable, uptime = check_reachable("nyx")
+        with patch("core.executor._run_local", return_value=(0, "", "")):
+            with patch("core.executor._ssh_exec", return_value=(0, "up 4 hours, 39 minutes\n", "")):
+                reachable, uptime = check_reachable("nyx")
         assert reachable is True
         assert uptime is not None
 
-    def test_remote_unreachable_on_exception(self):
+    def test_remote_reachable_no_ssh(self):
+        # Machine responds to ping but SSH is down
         from core.executor import check_reachable
-        import paramiko
-        with patch("core.executor._ssh_exec", side_effect=OSError("Connection refused")):
+        with patch("core.executor._run_local", return_value=(0, "", "")):
+            with patch("core.executor._ssh_exec", side_effect=OSError("Connection refused")):
+                reachable, uptime = check_reachable("nyx")
+        assert reachable is True
+        assert uptime is None
+
+    def test_remote_unreachable_on_exception(self):
+        # ping itself fails
+        from core.executor import check_reachable
+        with patch("core.executor._run_local", side_effect=OSError("Network error")):
             reachable, uptime = check_reachable("selene")
         assert reachable is False
         assert uptime is None
 
     def test_remote_unreachable_on_timeout(self):
+        # ping returns non-zero exit (host down)
         from core.executor import check_reachable
-        with patch("core.executor._ssh_exec", side_effect=TimeoutError("timed out")):
+        with patch("core.executor._run_local", return_value=(1, "", "")):
             reachable, uptime = check_reachable("nyx")
         assert reachable is False
         assert uptime is None
