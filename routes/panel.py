@@ -6,7 +6,7 @@ from config import MACHINES
 from core.executor import (
     check_reachable, get_systemd_state, get_docker_state,
     run_systemd_action, run_docker_action, run_reboot,
-    get_gpu_stats, get_service_logs,
+    get_gpu_stats, get_service_logs, get_machine_data_batch,
 )
 
 router = APIRouter()
@@ -17,6 +17,23 @@ async def _get_machine_status(machine_key: str, machine: dict) -> dict:
     if not reachable:
         return {"reachable": False, "uptime": None, "services": [], "gpu": None}
 
+    if not machine["is_local"]:
+        # Single SSH session for all remote commands — avoids sshd MaxStartups throttling
+        states, gpu = await asyncio.to_thread(get_machine_data_batch, machine_key)
+        services = [
+            {
+                "name": svc["name"],
+                "label": svc.get("label", svc["name"]),
+                "type": svc["type"],
+                "state": states.get(svc["name"], "unknown"),
+                "url": svc.get("url"),
+                "desc": svc.get("desc"),
+            }
+            for svc in machine["services"]
+        ]
+        return {"reachable": True, "uptime": uptime, "services": services, "gpu": gpu}
+
+    # Local machine: parallel subprocess calls are fine
     async def fetch_service(svc: dict):
         try:
             if svc["type"] == "systemd":
@@ -36,19 +53,8 @@ async def _get_machine_status(machine_key: str, machine: dict) -> dict:
             "desc": svc.get("desc"),
         }
 
-    async def fetch_gpu():
-        if not machine.get("has_gpu"):
-            return None
-        try:
-            return await asyncio.to_thread(get_gpu_stats, machine_key)
-        except Exception:
-            return None
-
-    services_results, gpu = await asyncio.gather(
-        asyncio.gather(*[fetch_service(s) for s in machine["services"]]),
-        fetch_gpu(),
-    )
-    return {"reachable": True, "uptime": uptime, "services": list(services_results), "gpu": gpu}
+    services = list(await asyncio.gather(*[fetch_service(s) for s in machine["services"]]))
+    return {"reachable": True, "uptime": uptime, "services": services, "gpu": None}
 
 
 @router.get("/api/status")

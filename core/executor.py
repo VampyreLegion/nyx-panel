@@ -28,8 +28,63 @@ def _ssh_exec(host: str, user: str, password: str, command: str, timeout: int = 
         client.close()
 
 
+def _ssh_connect(ip: str, user: str, password: str, timeout: int = 10) -> paramiko.SSHClient:
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(ip, username=user, password=password,
+                   look_for_keys=False, allow_agent=False, timeout=timeout)
+    return client
+
+
+def _exec_on(client: paramiko.SSHClient, cmd: str, timeout: int = 10) -> tuple[int, str, str]:
+    _, stdout, stderr = client.exec_command(cmd, timeout=timeout)
+    rc = stdout.channel.recv_exit_status()
+    return rc, stdout.read().decode(), stderr.read().decode()
+
+
+def _parse_systemd_state(raw: str) -> str:
+    if raw == "active": return "running"
+    if raw in ("inactive", "dead"): return "stopped"
+    if raw in ("failed", "error"): return "error"
+    if raw == "activating": return "starting"
+    return raw or "unknown"
+
+
+def _parse_docker_state(raw: str) -> str:
+    if raw == "running": return "running"
+    if raw in ("exited", "created", "dead"): return "stopped"
+    if raw == "missing": return "missing"
+    return raw or "unknown"
+
+
+def _parse_gpu_output(smi_out: str, mem_out: str) -> list[dict] | None:
+    if not smi_out.strip():
+        return None
+    gpus = []
+    for line in smi_out.strip().splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 5:
+            continue
+        idx, name, util, temp, power = parts[0], parts[1], parts[2], parts[3], parts[4]
+        gpu = {
+            "index": idx,
+            "name": name,
+            "util_pct": None if util == "[N/A]" else int(float(util)),
+            "temp_c": None if temp == "[N/A]" else int(float(temp)),
+            "power_w": None if power == "[N/A]" else round(float(power), 1),
+        }
+        if mem_out.strip():
+            mparts = mem_out.split()
+            try:
+                gpu["mem_used_mb"]  = int(mparts[2])
+                gpu["mem_total_mb"] = int(mparts[1])
+            except Exception:
+                pass
+        gpus.append(gpu)
+    return gpus or None
+
+
 def check_reachable(machine_key: str) -> tuple[bool, str | None]:
-    """Returns (reachable, uptime_string_or_None). Raises nothing."""
     m = MACHINES[machine_key]
     try:
         if m["is_local"]:
@@ -45,37 +100,54 @@ def check_reachable(machine_key: str) -> tuple[bool, str | None]:
 def get_systemd_state(machine_key: str, service_name: str) -> str:
     m = MACHINES[machine_key]
     if m["is_local"]:
-        rc, out, _ = _run_local(["systemctl", "is-active", service_name])
+        _, out, _ = _run_local(["systemctl", "is-active", service_name])
     else:
-        rc, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"],
+        _, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"],
                                f"systemctl is-active {service_name}")
-    state = out.strip()
-    if state == "active":
-        return "running"
-    if state in ("inactive", "dead"):
-        return "stopped"
-    if state in ("failed", "error"):
-        return "error"
-    if state == "activating":
-        return "starting"
-    return state or "unknown"
+    return _parse_systemd_state(out.strip())
 
 
 def get_docker_state(machine_key: str, container_name: str) -> str:
     m = MACHINES[machine_key]
     cmd = f"docker inspect --format={{{{.State.Status}}}} {container_name} 2>/dev/null || echo missing"
     if m["is_local"]:
-        rc, out, _ = _run_local(["bash", "-c", cmd])
+        _, out, _ = _run_local(["bash", "-c", cmd])
     else:
-        rc, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], cmd)
-    state = out.strip()
-    if state == "running":
-        return "running"
-    if state in ("exited", "created", "dead"):
-        return "stopped"
-    if state == "missing":
-        return "missing"
-    return state or "unknown"
+        _, out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], cmd)
+    return _parse_docker_state(out.strip())
+
+
+def get_machine_data_batch(machine_key: str) -> tuple[dict[str, str], list[dict] | None]:
+    """Fetch all service states + GPU stats for a remote machine in one SSH session."""
+    m = MACHINES[machine_key]
+    client = _ssh_connect(m["ip"], m["ssh_user"], m["ssh_password"])
+    states: dict[str, str] = {}
+    gpu: list[dict] | None = None
+    try:
+        for svc in m["services"]:
+            try:
+                if svc["type"] == "systemd":
+                    _, out, _ = _exec_on(client, f"systemctl is-active {svc['name']}")
+                    states[svc["name"]] = _parse_systemd_state(out.strip())
+                elif svc["type"] == "docker":
+                    _, out, _ = _exec_on(client,
+                        f"docker inspect --format={{{{.State.Status}}}} {svc['name']} 2>/dev/null || echo missing")
+                    states[svc["name"]] = _parse_docker_state(out.strip())
+                else:
+                    states[svc["name"]] = "unknown"
+            except Exception:
+                states[svc["name"]] = "unknown"
+        if m.get("has_gpu"):
+            try:
+                smi = "nvidia-smi --query-gpu=index,name,utilization.gpu,temperature.gpu,power.draw --format=csv,noheader,nounits 2>/dev/null"
+                _, smi_out, _ = _exec_on(client, smi, timeout=6)
+                _, mem_out, _ = _exec_on(client, "free -m | grep Mem", timeout=6)
+                gpu = _parse_gpu_output(smi_out, mem_out)
+            except Exception:
+                gpu = None
+    finally:
+        client.close()
+    return states, gpu
 
 
 def run_systemd_action(machine_key: str, service_name: str, action: str) -> tuple[bool, str]:
@@ -84,8 +156,7 @@ def run_systemd_action(machine_key: str, service_name: str, action: str) -> tupl
     if action not in ("start", "stop", "restart"):
         return False, "invalid action"
     if m["is_local"]:
-        cmd = ["sudo", "-S", "systemctl", action, service_name]
-        rc, out, err = _run_local(cmd, sudo_password=sudo_pw)
+        rc, out, err = _run_local(["sudo", "-S", "systemctl", action, service_name], sudo_password=sudo_pw)
     else:
         cmd = f"echo '{sudo_pw}' | sudo -S systemctl {action} {service_name}"
         rc, out, err = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], cmd)
@@ -165,7 +236,6 @@ def get_service_logs(machine_key: str, service_name: str, service_type: str, lin
 
 
 def get_gpu_stats(machine_key: str) -> list[dict] | None:
-    """Returns list of GPU dicts, or None if nvidia-smi unavailable."""
     m = MACHINES[machine_key]
     smi = "nvidia-smi --query-gpu=index,name,utilization.gpu,temperature.gpu,power.draw --format=csv,noheader,nounits 2>/dev/null"
     mem = "free -m | grep Mem"
@@ -178,30 +248,4 @@ def get_gpu_stats(machine_key: str) -> list[dict] | None:
             _, mem_out, _ = _ssh_exec(m["ip"], m["ssh_user"], m["ssh_password"], mem, timeout=6)
     except Exception:
         return None
-
-    if not smi_out.strip():
-        return None
-
-    gpus = []
-    for line in smi_out.strip().splitlines():
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) < 5:
-            continue
-        idx, name, util, temp, power = parts[0], parts[1], parts[2], parts[3], parts[4]
-        gpu = {
-            "index": idx,
-            "name": name,
-            "util_pct": None if util == "[N/A]" else int(float(util)),
-            "temp_c": None if temp == "[N/A]" else int(float(temp)),
-            "power_w": None if power == "[N/A]" else round(float(power), 1),
-        }
-        # parse system memory for unified-memory GPUs
-        if mem_out.strip():
-            parts = mem_out.split()
-            try:
-                gpu["mem_used_mb"]  = int(parts[2])
-                gpu["mem_total_mb"] = int(parts[1])
-            except Exception:
-                pass
-        gpus.append(gpu)
-    return gpus or None
+    return _parse_gpu_output(smi_out, mem_out)
