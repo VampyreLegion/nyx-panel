@@ -145,6 +145,40 @@ async function fetchStatus() {
   }
 }
 
+// ── TUNNELS TABLE ────────────────────────────────────────────────────────
+function machineClass(m) {
+  return 'tag-' + (m || '').toLowerCase();
+}
+async function fetchTunnels() {
+  try {
+    const res = await fetch('/api/tunnels');
+    if (!res.ok) throw new Error(res.status);
+    const {tunnels} = await res.json();
+    renderTunnels(tunnels || []);
+  } catch {
+    document.getElementById('tunnels-body').innerHTML =
+      '<tr><td colspan="5" class="tunnels-empty">⚠ Failed to load tunnel routes</td></tr>';
+  }
+}
+function renderTunnels(tunnels) {
+  const pub = tunnels.filter(t => t.auth === 'Public').length;
+  document.getElementById('tunnels-count').textContent =
+    `${tunnels.length} active routes · ${pub} public · ${tunnels.length - pub} behind Access`;
+  document.getElementById('tunnels-body').innerHTML = tunnels.map(t => {
+    const isPublic = t.auth === 'Public';
+    const authCls  = isPublic ? 'auth-public' : 'auth-protected';
+    const link = `<a href="https://${t.host}" target="_blank" rel="noopener">${t.host}</a>`;
+    return `
+      <tr>
+        <td class="t-host">${link}</td>
+        <td><span class="machine-tag ${machineClass(t.machine)}">${t.machine}</span></td>
+        <td class="t-backend">${t.backend}</td>
+        <td class="t-desc">${t.service}</td>
+        <td><span class="auth-badge ${authCls}">${t.auth}</span></td>
+      </tr>`;
+  }).join('');
+}
+
 // ── ACTIONS ──────────────────────────────────────────────────────────────
 async function sendAction(machine, service, type, action) {
   const res = await fetch('/api/action', {
@@ -278,6 +312,7 @@ function closeLogs() {
 // ── INIT ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   fetchStatus();
+  fetchTunnels();
   setInterval(fetchStatus, POLL_INTERVAL);
   document.getElementById('refresh-btn').addEventListener('click', fetchStatus);
   document.getElementById('modal-close').addEventListener('click', closeSysinfo);

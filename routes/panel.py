@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 from fastapi import APIRouter
 from pydantic import BaseModel
-from config import MACHINES
+from config import MACHINES, TUNNELS
 from core.executor import (
     check_reachable, get_systemd_state, get_docker_state,
     run_systemd_action, run_docker_action, run_reboot,
@@ -55,6 +55,11 @@ async def _get_machine_status(machine_key: str, machine: dict) -> dict:
 
     services = list(await asyncio.gather(*[fetch_service(s) for s in machine["services"]]))
     return {"reachable": True, "uptime": uptime, "services": services, "gpu": None}
+
+
+@router.get("/api/tunnels")
+async def tunnels():
+    return {"tunnels": TUNNELS}
 
 
 @router.get("/api/status")
