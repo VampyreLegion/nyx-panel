@@ -70,7 +70,7 @@ TUNNELS = [
     # ── PUBLIC ──────────────────────────────────────────────────────────────────────
     {"host": "nyxstudios.net",         "machine": "astraea",  "backend": "localhost:80",      "service": "Apache static site",          "auth": "Public"},
     {"host": "art.nyxstudios.net",     "machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Web",               "auth": "Public"},
-    {"host": "artadmin.nyxstudios.net","machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Admin",             "auth": "Public"},
+    {"host": "artadmin.nyxstudios.net","machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Admin",             "auth": "Access"},
     {"host": "invaders.nyxstudios.net","machine": "astraea",  "backend": "localhost:80",        "service": "Astraea Apache (invaders)",    "auth": "Public"},
     # ── ACCESS-PROTECTED (Google OAuth / qAuth) ────────────────────────────────────
     {"host": "music.nyxstudios.net",   "machine": "astraea",  "backend": "localhost:4533",      "service": "Navidrome",                    "auth": "Access"},
