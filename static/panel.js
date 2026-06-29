@@ -20,7 +20,7 @@ function stateClass(state) {
 function cap(s)  { return s.charAt(0).toUpperCase() + s.slice(1); }
 function slug(s) { return s.replace(/[^a-z0-9]/gi, '-'); }
 function getIP(key) {
-  return {nyx:'192.168.1.236', astraea:'192.168.1.109', selene:'192.168.1.25'}[key] || '';
+  return {nyx:'192.168.1.236', astraea:'192.168.1.109', selene:'192.168.1.134'}[key] || '';
 }
 function fmt(n, unit) { return n == null ? '—' : n + unit; }
 function fmtMem(mb) {

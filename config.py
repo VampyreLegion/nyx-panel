@@ -50,7 +50,7 @@ MACHINES = {
     },
     "selene": {
         "label": "Selene",
-        "ip": "192.168.1.25",
+        "ip": "192.168.1.134",
         "is_local": False,
         "has_gpu": False,
         "ssh_user": SSH_USER,
@@ -61,8 +61,38 @@ MACHINES = {
             {"name": "postgresql",     "type": "systemd", "label": "PostgreSQL",     "desc": "Database for Immich — PostgreSQL 16 on :5432 (localhost only)",                "url": None},
             {"name": "redis-server",   "type": "systemd", "label": "Redis",          "desc": "Cache for Immich — Redis on :6379 (localhost only)",                           "url": None},
             {"name": "nginx",          "type": "systemd", "label": "nginx",          "desc": "HTTPS proxy — :443 → Immich :8080, using Cloudflare Origin Certificate",       "url": None},
+            {"name": "ollama",         "type": "systemd", "label": "Ollama",         "desc": "Local LLM inference server — serves Ollama API on :11434",                    "url": None},
         ],
     },
 }
 
-TUNNELS = []
+TUNNELS = [
+    # ── PUBLIC ──────────────────────────────────────────────────────────────────────
+    {"host": "nyxstudios.net",         "machine": "astraea",  "backend": "localhost:80",      "service": "Apache static site",          "auth": "Public"},
+    {"host": "openclaw.nyxstudios.net","machine": "astraea",  "backend": "localhost:18789",     "service": "OpenClaw MCP gateway",         "auth": "Public"},
+    {"host": "art.nyxstudios.net",     "machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Web",               "auth": "Public"},
+    {"host": "artadmin.nyxstudios.net","machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Admin",             "auth": "Public"},
+    {"host": "invaders.nyxstudios.net","machine": "astraea",  "backend": "localhost:80",        "service": "Astraea Apache (invaders)",    "auth": "Public"},
+    # ── ACCESS-PROTECTED (Google OAuth / qAuth) ────────────────────────────────────
+    {"host": "music.nyxstudios.net",   "machine": "astraea",  "backend": "localhost:4533",      "service": "Navidrome",                    "auth": "Access"},
+    {"host": "services.nyxstudios.net","machine": "astraea",  "backend": "localhost:8085",      "service": "Nyx Control Panel",            "auth": "Access"},
+    {"host": "autoevents.nyxstudios.net","machine": "astraea","backend": "localhost:8088",      "service": "AutoEvents",                   "auth": "Access"},
+    {"host": "autoevents-admin.nyxstudios.net","machine": "astraea","backend": "localhost:8088","service": "AutoEvents Admin",      "auth": "Access"},
+    {"host": "app.nyxstudios.net",     "machine": "astraea",  "backend": "localhost:80",        "service": "K8 AI Lab App",                "auth": "Access"},
+    {"host": "hello-world.nyxstudios.net","machine": "astraea","backend": "localhost:80",       "service": "Test deploy",                  "auth": "Access"},
+    {"host": "hello-nyx.nyxstudios.net","machine": "astraea", "backend": "localhost:80",        "service": "Test deploy",                  "auth": "Access"},
+    {"host": "nyx.nyxstudios.net",     "machine": "nyx",      "backend": "192.168.1.236:7000",  "service": "Nyx Odysseus",                 "auth": "Access"},
+    {"host": "ai.nyxstudios.net",      "machine": "nyx",      "backend": "192.168.1.236:8188",  "service": "ComfyUI",                      "auth": "Access"},
+    {"host": "ai2.nyxstudios.net",     "machine": "nyx",      "backend": "192.168.1.236:7865",  "service": "ACE-Step",                     "auth": "Access"},
+    {"host": "music-ai.nyxstudios.net","machine": "nyx",      "backend": "192.168.1.236:8001",  "service": "Nyx-Step / MusicWeb",          "auth": "Access"},
+    {"host": "gitlab.nyxstudios.net",  "machine": "nyx",      "backend": "192.168.1.236:8929",  "service": "GitLab CE",                    "auth": "Access"},
+    {"host": "portainer.nyxstudios.net","machine": "nyx",     "backend": "192.168.1.236:9443",  "service": "Portainer CE",                 "auth": "Access"},
+    {"host": "teamcaster.nyxstudios.net","machine": "nyx",    "backend": "192.168.1.236:8086",  "service": "TeamCaster Studio",            "auth": "Access"},
+    {"host": "hermes.nyxstudios.net",  "machine": "nyx",      "backend": "192.168.1.236:6080",  "service": "Hermes Desktop (noVNC)",       "auth": "Access"},
+    {"host": "selene.nyxstudios.net",  "machine": "selene",   "backend": "192.168.1.134:8081",  "service": "Selene Open WebUI",            "auth": "Access"},
+    {"host": "listen.nyxstudios.net",  "machine": "selene",   "backend": "192.168.1.134:8087",  "service": "TeamCaster Listener",          "auth": "Access"},
+    {"host": "teamcaster-selene.nyxstudios.net","machine": "selene","backend": "192.168.1.134:8086","service": "TeamCaster Selene", "auth": "Access"},
+    {"host": "chat.nyxstudios.net",    "machine": "nyx",      "backend": "192.168.1.236:8080",  "service": "Nyx Open WebUI",               "auth": "Access"},
+    {"host": "nyxnotes.nyxstudios.net","machine": "nyx",      "backend": "192.168.1.236:5055",  "service": "Open Notebook (nyxnotes)",     "auth": "Access"},
+    {"host": "notebook.nyxstudios.net","machine": "nyx",      "backend": "192.168.1.236:5055",  "service": "Open Notebook (alias)",        "auth": "Access"},
+]
