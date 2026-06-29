@@ -1,0 +1,18 @@
+[Unit]
+Description=Nyx Control Panel - FastAPI service manager
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/legion/legionprojects/nyx-panel
+ExecStart=/home/legion/legionprojects/nyx-panel/venv/bin/uvicorn nyx_panel:app --host 127.0.0.1 --port 8085
+Restart=always
+RestartSec=5
+User=legion
+Group=legion
+Environment=PATH=/home/legion/legionprojects/nyx-panel/venv/bin:/usr/bin:/bin
+Environment=SSH_PASSWORD=Zaq12345zaq1
+Environment=SSH_SUDO_PASSWORD=Zaq12345zaq1
+
+[Install]
+WantedBy=multi-user.target
