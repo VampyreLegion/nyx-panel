@@ -69,7 +69,6 @@ MACHINES = {
 TUNNELS = [
     # ── PUBLIC ──────────────────────────────────────────────────────────────────────
     {"host": "nyxstudios.net",         "machine": "astraea",  "backend": "localhost:80",      "service": "Apache static site",          "auth": "Public"},
-    {"host": "openclaw.nyxstudios.net","machine": "astraea",  "backend": "localhost:18789",     "service": "OpenClaw MCP gateway",         "auth": "Public"},
     {"host": "art.nyxstudios.net",     "machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Web",               "auth": "Public"},
     {"host": "artadmin.nyxstudios.net","machine": "astraea",  "backend": "localhost:8090",      "service": "Living Art Admin",             "auth": "Public"},
     {"host": "invaders.nyxstudios.net","machine": "astraea",  "backend": "localhost:80",        "service": "Astraea Apache (invaders)",    "auth": "Public"},
